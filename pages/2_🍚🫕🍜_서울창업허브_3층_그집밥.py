@@ -75,7 +75,7 @@ class ProjectContextChatbot:
 현재 시간 정보:
 - 날짜: {time_info['date']}
 - 요일: {time_info['weekday']}
-- 시간: {time_info['time']}
+- 시간 (한국): {time_info['time']}
 
 프로젝트 컨텍스트:
 {self.context}

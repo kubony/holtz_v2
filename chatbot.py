@@ -9,6 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain_community.chat_models import ChatOllama
 import anthropic
 from anthropic import Anthropic
+import pytz
 
 def setup_logging():
     logger.add("logs/app.log", rotation="500 MB", level="INFO")
@@ -104,14 +105,16 @@ def setup_logging():
         logger.error("OPENAI_API_KEY is not set in the environment variables.")
 
 def get_current_time_info():
-    from datetime import datetime
-    
+
     weekday_names = {
         0: '월요일', 1: '화요일', 2: '수요일', 
         3: '목요일', 4: '금요일', 5: '토요일', 6: '일요일'
     }
     
-    now = datetime.now()
+    # 한국 시간대 설정
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    
     current_time = now.strftime("%H:%M")
     current_date = now.strftime("%Y년 %m월 %d일")
     weekday = weekday_names[now.weekday()]
