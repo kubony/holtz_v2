@@ -48,7 +48,7 @@ class MainChatbot:
     @chatbot.enable_chat_history
     def main(self):
         chain = self.setup_chain(1000)  # 기본값으로 1000 설정
-        user_query = st.chat_input(placeholder="안녕하세요! 주문하실 매장을 선택해주세요!")
+        user_query = st.chat_input(placeholder="안녕하세요! 주문할 식권 수를 입력해주세요!")
         store_name = "서울창업허브 3층 그집밥"
 
         if user_query:
