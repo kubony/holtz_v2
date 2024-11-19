@@ -34,7 +34,7 @@ def enable_chat_history(func):
                 pass
 
         if "messages" not in st.session_state:
-            st.session_state["messages"] = [{"role": "assistant", "content": "주문하시겠어요? 메뉴를 골라주세요!"}]
+            st.session_state["messages"] = [{"role": "assistant", "content": "안녕하세요. 그집밥 주문 챗봇이에요. 몇장 드릴까요?"}]
         for msg in st.session_state["messages"]:
             st.chat_message(msg["role"]).write(msg["content"])
 
