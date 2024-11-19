@@ -1,34 +1,86 @@
 import streamlit as st
 from loguru import logger
+import utils.utils as utils
+import chatbot as chatbot
+from streaming import StreamHandler
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationBufferMemory
+from config.settings import settings
 
 st.set_page_config(
-    page_title="Langchain 챗봇",
+    page_title="Butlerian Holtz",
     page_icon='💬',
-    layout='wide'
+    layout='wide',
+    initial_sidebar_state="collapsed"
 )
 
 logger.info("메인 페이지 로드됨")
 
-st.header("편한 주문 서비스 Holtz")
+st.header("키오스크 줄서지마 서비스 - Holtz")
 
-st.write("""
-안녕하세요!
-저는 편한 주문 서비스 Holtz입니다.
-주문하고 싶은 매장을 왼쪽 메뉴에서 선택해주세요!
+class MainChatbot:
+    def __init__(self):
+        utils.sync_st_session()
+        self.llm = utils.configure_llm()
+    
+    @st.cache_resource
+    def setup_chain(_self, max_tokens=1000):
+        memory = ConversationBufferMemory(max_token_limit=max_tokens)
+        chain = ConversationChain(
+            llm=_self.llm, 
+            memory=memory,
+            verbose=True
+        )
+        return chain
+    
+    @chatbot.enable_chat_history
+    def main(self):
+        chain = self.setup_chain(1000)  # 기본값으로 1000 설정
+        user_query = st.chat_input(placeholder="안녕하세요! 주문하실 매장을 선택해주세요!")
+        store_name = "서울창업허브 3층 그집밥"
 
-- **더치앤빈 서울창업허브점** : 메뉴 확인 가능, 결제 기능 준비 중
-- **서울창업허브 3층 그집밥** : 메뉴 확인 가능, 결제 기능 준비 중
-""")
+        if user_query:
+            utils.display_msg(user_query, 'user')
+            with st.chat_message("assistant"):
+                st_cb = StreamHandler(st.empty())
+                try:
+                    common_instructions = chatbot.load_common_instructions()
+                    project_instructions = chatbot.load_project_context(store_name)
+                    time_info = chatbot.get_current_time_info()
+                    
+                    full_query = f"""
+공통 지시사항:
+{common_instructions}
 
-# 버전 정보 표시
-st.sidebar.text("버전: 1.0.0")
+프로젝트 지시사항:
+{project_instructions}
 
-# 피드백 섹션
-st.sidebar.text_input("피드백", placeholder="여기에 피드백을 입력하세요")
-if st.sidebar.button("피드백 제출"):
-    # 피드백 처리 로직을 여기에 추가할 수 있습니다.
-    logger.info("사용자가 피드백을 제출함")
-    st.sidebar.success("피드백을 주셔서 감사합니다!")
+현재 시간 정보:
+- 날짜: {time_info['date']}
+- 요일: {time_info['weekday']}
+- 시간 (한국): {time_info['time']}
+
+이전 대화 내용:
+{chatbot.get_chat_history()}
+
+사용자 질문: {user_query}"""
+                    
+                    result = chain.invoke(
+                        {"input": full_query},
+                        {"callbacks": [st_cb]}
+                    )
+                    response = result["response"]
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    logger.info(f"사용자 질문: {user_query}")
+                    logger.info(f"챗봇 응답: {response}")
+                except Exception as e:
+                    error_msg = f"응답 생성 중 오류 발생: {str(e)}"
+                    st.error(error_msg)
+                    logger.error(error_msg)
+
+if __name__ == "__main__":
+    obj = MainChatbot()
+    obj.main()
 
 logger.info("메인 페이지 렌더링 완료")
 
