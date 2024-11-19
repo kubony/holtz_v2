@@ -8,7 +8,7 @@ utils_dir = os.path.join(root_dir, "utils")
 
 sys.path.append(utils_dir)
 
-import utils.chatbot as chatbot
+import chatbot as chatbot
 
 import streamlit as st
 from streaming import StreamHandler
