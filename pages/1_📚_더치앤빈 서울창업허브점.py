@@ -7,16 +7,26 @@ from langchain.memory import ConversationBufferMemory
 from loguru import logger
 from config.settings import settings
 
-st.set_page_config(page_title="서울창업허브 3층 키친인큐베이터 챗봇", page_icon="📚")
-st.header('서울창업허브 3층 키친인큐베이터 챗봇')
+st.set_page_config(page_title="더치앤빈 서울창업허브점 챗봇", page_icon="📚")
+st.header('더치앤빈 서울창업허브점 챗봇')
 st.write('메뉴 정보를 기반으로 대화하는 챗봇입니다.')
 
 class ProjectContextChatbot:
     def __init__(self):
         chatbotutils.sync_st_session()
         self.llm = chatbotutils.configure_llm()
-        self.context = chatbotutils.load_project_context("서울창업허브 3층 그집밥")
+        self.context = self.load_project_context()
     
+    def load_project_context(self):
+        try:
+            file_path = os.path.join("store_infos", "더치앤빈 서울창업허브점.md")
+            with open(file_path, 'r', encoding='utf-8') as file:
+                context = file.read()
+            return context
+        except Exception as e:
+            logger.error(f"프로젝트 컨텍스트 로드 중 오류 발생: {str(e)}")
+            return "컨텍스트를 불러오는데 실패했습니다."
+
     @st.cache_resource
     def setup_chain(_self, max_tokens=1000):
         memory = ConversationBufferMemory(max_token_limit=max_tokens)
@@ -31,28 +41,19 @@ class ProjectContextChatbot:
     def main(self):
         max_tokens = st.sidebar.slider("메모리 크기 (토큰)", 100, 2000, 1000)
         chain = self.setup_chain(max_tokens)
-        common_instructions = chatbotutils.load_common_instructions()
 
         with st.expander("프로젝트 컨텍스트 정보", expanded=False):
             st.text(self.context)
 
-        user_query = st.chat_input(placeholder="서울창업허브 3층 키친인큐베이터입니다! 메뉴를 확인하시겠어요?")
+        user_query = st.chat_input(placeholder="더치앤빈 서울창업허브점입니다! 주문하시겠어요?")
         
         if user_query:
             chatbotutils.display_msg(user_query, 'user')
             with st.chat_message("assistant"):
                 st_cb = StreamHandler(st.empty())
                 try:
-                    time_info = chatbotutils.get_current_time_info()
-                    full_query = f"""공통 지시사항:
-{common_instructions}
-
-현재 시간 정보:
-- 날짜: {time_info['date']}
-- 요일: {time_info['weekday']}
-- 시간: {time_info['time']}
-
-프로젝트 컨텍스트:
+                    # 프로젝트 컨텍스트를 포함한 쿼리 생성
+                    full_query = f"""프로젝트 컨텍스트:
 {self.context}
 
 사용자 질문: {user_query}"""
