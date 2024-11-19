@@ -1,7 +1,15 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# 모듈 경로 설정
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(current_dir)
+utils_dir = os.path.join(root_dir, "utils")
+
+sys.path.append(utils_dir)
+
 import utils.chatbot as chatbot
+
 import streamlit as st
 from streaming import StreamHandler
 from langchain.chains import ConversationChain
