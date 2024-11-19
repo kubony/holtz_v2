@@ -16,7 +16,7 @@ st.set_page_config(
 
 logger.info("메인 페이지 로드됨")
 
-st.header("키오스크 줄서지마 서비스 - Holtz")
+st.header("Holtz : 키오스크 줄서지마")
 
 # 이미지를 위한 컨테이너 생성
 image_container = st.container()
@@ -27,7 +27,7 @@ with image_container:
     with col2:  # 중앙 컬럼에 이미지 배치
         st.image(
             "assets/그집밥_오늘의메뉴_202411xx.png",
-            caption="그집밥 메뉴",
+            caption="그집밥 오늘 메뉴",
             width=400  # 이미지 너비 지정
         )
 class MainChatbot:
