@@ -1,5 +1,5 @@
 import os
-import utils
+import utils.chatbotutils as chatbotutils
 import streamlit as st
 from streaming import StreamHandler
 from langchain.chains import ConversationChain
@@ -13,9 +13,9 @@ st.write('메뉴 정보를 기반으로 대화하는 챗봇입니다.')
 
 class ProjectContextChatbot:
     def __init__(self):
-        utils.sync_st_session()
-        self.llm = utils.configure_llm()
-        self.context = utils.load_project_context("더치앤빈 서울창업허브점")
+        chatbotutils.sync_st_session()
+        self.llm = chatbotutils.configure_llm()
+        self.context = chatbotutils.load_project_context("더치앤빈 서울창업허브점")
     
     @st.cache_resource
     def setup_chain(_self, max_tokens=1000):
@@ -27,11 +27,11 @@ class ProjectContextChatbot:
         )
         return chain
     
-    @utils.enable_chat_history
+    @chatbotutils.enable_chat_history
     def main(self):
         max_tokens = st.sidebar.slider("메모리 크기 (토큰)", 100, 2000, 1000)
         chain = self.setup_chain(max_tokens)
-        common_instructions = utils.load_common_instructions()
+        common_instructions = chatbotutils.load_common_instructions()
 
         with st.expander("프로젝트 컨텍스트 정보", expanded=False):
             st.text(self.context)
@@ -39,11 +39,11 @@ class ProjectContextChatbot:
         user_query = st.chat_input(placeholder="더치앤빈 서울창업허브점입니다! 주문하시겠어요?")
         
         if user_query:
-            utils.display_msg(user_query, 'user')
+            chatbotutils.display_msg(user_query, 'user')
             with st.chat_message("assistant"):
                 st_cb = StreamHandler(st.empty())
                 try:
-                    time_info = utils.get_current_time_info()
+                    time_info = chatbotutils.get_current_time_info()
                     full_query = f"""공통 지시사항:
 {common_instructions}
 
