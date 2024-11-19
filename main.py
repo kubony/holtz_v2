@@ -4,6 +4,7 @@ from utils import chat, llm, logger_setup, session
 from streaming import StreamHandler
 from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferMemory
+from utils.googlesheetapi import GoogleAPIManager
 
 logger_setup.setup_logging()
 
@@ -34,6 +35,28 @@ class MainChatbot:
     def __init__(self):
         session.sync_st_session()
         self.llm = llm.configure_llm()
+        self.sheet_manager = GoogleAPIManager()
+        self.SPREADSHEET_ID = "1-D0cPxM-5nU-yrfimHrLgTZZsQTLeVTxRTzQMuen_sw"
+    
+    def get_waiting_info(self) -> str:
+        """구글 시트에서 대기 인원수 정보를 가져옵니다."""
+        try:
+            metadata = self.sheet_manager.get_spreadsheet_metadata(self.SPREADSHEET_ID)
+            if metadata and metadata.get('sheets'):
+                sheet_title = metadata['sheets'][0]['properties']['title']
+                range_name = f"'{sheet_title}'!A:B"
+                
+                data = self.sheet_manager.read_sheet_data(self.SPREADSHEET_ID, range_name)
+                if data:
+                    waiting_info = "\n현재 대기 현황:\n"
+                    for row in data:
+                        if len(row) >= 2:  # A열과 B열 모두 데이터가 있는 경우
+                            waiting_info += f"- {row[0]}: {row[1]}명\n"
+                    return waiting_info
+            return "\n현재 대기 인원 정보를 확인할 수 없습니다."
+        except Exception as e:
+            logger.error(f"대기 인원 정보 조회 중 오류 발생: {str(e)}")
+            return "\n현재 대기 인원 정보를 확인할 수 없습니다."
     
     @st.cache_resource
     def setup_chain(_self, max_tokens=1000):
@@ -47,7 +70,7 @@ class MainChatbot:
     
     @chat.enable_chat_history
     def main(self):
-        chain = self.setup_chain(1000)  # 기본값으로 1000 설정
+        chain = self.setup_chain(1000)
         user_query = st.chat_input(placeholder="안녕하세요! 주문할 식권 수를 입력해주세요!")
         store_name = "서울창업허브 3층 그집밥"
 
@@ -59,6 +82,7 @@ class MainChatbot:
                     common_instructions = chat.load_common_instructions()
                     project_instructions = chat.load_project_context(store_name)
                     time_info = chat.get_current_time_info()
+                    waiting_info = self.get_waiting_info()
                     
                     full_query = f"""
 공통 지시사항:
@@ -71,6 +95,9 @@ class MainChatbot:
 - 날짜: {time_info['date']}
 - 요일: {time_info['weekday']}
 - 시간 (한국): {time_info['time']}
+
+대기 현황 정보:
+{waiting_info}
 
 이전 대화 내용:
 {chat.get_chat_history()}
