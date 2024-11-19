@@ -18,6 +18,18 @@ logger.info("메인 페이지 로드됨")
 
 st.header("키오스크 줄서지마 서비스 - Holtz")
 
+# 이미지를 위한 컨테이너 생성
+image_container = st.container()
+
+# 컬럼을 사용하여 이미지 크기 조절
+with image_container:
+    col1, col2, col3 = st.columns([1,3,1])  # 1:3:1 비율로 분할
+    with col2:  # 중앙 컬럼에 이미지 배치
+        st.image(
+            "assets/그집밥_오늘의메뉴_202411xx.png",
+            caption="그집밥 메뉴",
+            width=400  # 이미지 너비 지정
+        )
 class MainChatbot:
     def __init__(self):
         utils.sync_st_session()
