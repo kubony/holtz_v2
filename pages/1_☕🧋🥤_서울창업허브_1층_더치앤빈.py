@@ -4,9 +4,9 @@ import os
 # 모듈 경로 설정
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(current_dir)
-utils_dir = os.path.join(root_dir, "utils")
 
-sys.path.append(utils_dir)
+# 프로젝트 루트 디렉토리를 sys.path에 추가
+sys.path.append(root_dir)
 
 import utils.utils as utils
 import chatbot as chatbot
