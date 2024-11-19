@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import utils.chatbotutils as chatbotutils
+import utils.chatbot as chatbot
 import streamlit as st
 from streaming import StreamHandler
 from langchain.chains import ConversationChain
@@ -9,15 +9,15 @@ from langchain.memory import ConversationBufferMemory
 from loguru import logger
 from config.settings import settings
 
-st.set_page_config(page_title="서울창업허브 3층 키친인큐베이터 챗봇", page_icon="📚")
-st.header('서울창업허브 3층 키친인큐베이터 챗봇')
-st.write('메뉴 정보를 기반으로 대화하는 챗봇입니다.')
+st.set_page_config(page_title="서울창업허브 3층 그집밥 챗봇", page_icon="📚")
+st.header('서울창업허브 3층 그집밥 챗봇')
+st.write('그집밥 메뉴 정보를 기반으로 대화하는 챗봇입니다.')
 
 class ProjectContextChatbot:
     def __init__(self):
-        chatbotutils.sync_st_session()
-        self.llm = chatbotutils.configure_llm()
-        self.context = chatbotutils.load_project_context("서울창업허브 3층 그집밥")
+        chatbot.sync_st_session()
+        self.llm = chatbot.configure_llm()
+        self.context = chatbot.load_project_context("서울창업허브 3층 그집밥")
     
     @st.cache_resource
     def setup_chain(_self, max_tokens=1000):
@@ -29,11 +29,11 @@ class ProjectContextChatbot:
         )
         return chain
     
-    @chatbotutils.enable_chat_history
+    @chatbot.enable_chat_history
     def main(self):
         max_tokens = st.sidebar.slider("메모리 크기 (토큰)", 100, 2000, 1000)
         chain = self.setup_chain(max_tokens)
-        common_instructions = chatbotutils.load_common_instructions()
+        common_instructions = chatbot.load_common_instructions()
 
         with st.expander("프로젝트 컨텍스트 정보", expanded=False):
             st.text(self.context)
@@ -41,11 +41,11 @@ class ProjectContextChatbot:
         user_query = st.chat_input(placeholder="서울창업허브 3층 키친인큐베이터입니다! 메뉴를 확인하시겠어요?")
         
         if user_query:
-            chatbotutils.display_msg(user_query, 'user')
+            chatbot.display_msg(user_query, 'user')
             with st.chat_message("assistant"):
                 st_cb = StreamHandler(st.empty())
                 try:
-                    time_info = chatbotutils.get_current_time_info()
+                    time_info = chatbot.get_current_time_info()
                     full_query = f"""공통 지시사항:
 {common_instructions}
 
