@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-import googleapiclient.discovery
 from google.oauth2 import service_account
 from googleapiclient.errors import HttpError
 import pandas as pd
