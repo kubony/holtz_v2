@@ -7,20 +7,19 @@ from langchain.memory import ConversationBufferMemory
 from loguru import logger
 from config.settings import settings
 
-st.set_page_config(page_title="프로젝트 컨텍스트 챗봇", page_icon="📚")
-st.header('프로젝트 컨텍스트 챗봇')
-st.write('프로젝트 관련 문서를 기반으로 대화하는 챗봇입니다.')
+st.set_page_config(page_title="서울창업허브 3층 키친인큐베이터 챗봇", page_icon="📚")
+st.header('서울창업허브 3층 키친인큐베이터 챗봇')
+st.write('메뉴 정보를 기반으로 대화하는 챗봇입니다.')
 
 class ProjectContextChatbot:
     def __init__(self):
         utils.sync_st_session()
         self.llm = utils.configure_llm()
         self.context = self.load_project_context()
-        self.chain = self.setup_chain()
     
     def load_project_context(self):
         try:
-            file_path = os.path.join("store_infos", "더치앤빈 서울창업허브점.md")
+            file_path = os.path.join("store_infos", "서울창업허브 3층.md")
             with open(file_path, 'r', encoding='utf-8') as file:
                 context = file.read()
             return context
@@ -28,31 +27,37 @@ class ProjectContextChatbot:
             logger.error(f"프로젝트 컨텍스트 로드 중 오류 발생: {str(e)}")
             return "컨텍스트를 불러오는데 실패했습니다."
 
-    def setup_chain(self):
-        memory = ConversationBufferMemory()
+    @st.cache_resource
+    def setup_chain(_self, max_tokens=1000):
+        memory = ConversationBufferMemory(max_token_limit=max_tokens)
         chain = ConversationChain(
-            llm=self.llm, 
-            memory=memory, 
+            llm=_self.llm, 
+            memory=memory,
             verbose=True
         )
         return chain
     
     @utils.enable_chat_history
     def main(self):
-        # 프로젝트 컨텍스트 정보 표시
+        max_tokens = st.sidebar.slider("메모리 크기 (토큰)", 100, 2000, 1000)
+        chain = self.setup_chain(max_tokens)
+
         with st.expander("프로젝트 컨텍스트 정보", expanded=False):
             st.text(self.context)
 
-        user_query = st.chat_input(placeholder="프로젝트에 대해 무엇이든 물어보세요!")
+        user_query = st.chat_input(placeholder="서울창업허브 3층 키친인큐베이터입니다! 메뉴를 확인하시겠어요?")
         
         if user_query:
             utils.display_msg(user_query, 'user')
             with st.chat_message("assistant"):
                 st_cb = StreamHandler(st.empty())
                 try:
-                    # 프로젝트 컨텍스트를 쿼리에 추가
-                    full_query = f"프로젝트 컨텍스트:\n{self.context}\n\n사용자 질문: {user_query}"
-                    result = self.chain.invoke(
+                    full_query = f"""프로젝트 컨텍스트:
+{self.context}
+
+사용자 질문: {user_query}"""
+                    
+                    result = chain.invoke(
                         {"input": full_query},
                         {"callbacks": [st_cb]}
                     )
