@@ -1,11 +1,15 @@
+import os
+from dotenv import load_dotenv
 import googleapiclient.discovery
 from google.oauth2 import service_account
 from googleapiclient.errors import HttpError
 import pandas as pd
 import logging
-from typing import List, Dict, Union, Optional
 from googleapiclient.discovery import build
 from googleapiclient.discovery_cache.base import Cache
+from typing import List, Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 class MemoryCache(Cache):
     _CACHE = {}
@@ -19,18 +23,32 @@ class MemoryCache(Cache):
 class GoogleAPIManager:
     def __init__(self):
         try:
-            # 서비스 계정 키 파일 경로 설정
-            self.KEY_FILE ="creds/holtz-mark1.json"
-            self.SCOPES = ['https://www.googleapis.com/auth/spreadsheets',
-                          'https://www.googleapis.com/auth/drive']
-            self.MAX_RETRIES = 3
-            self.BATCH_SIZE = 1000
-
-            # 서비스 계정 키 파일에서 Credentials 객체 생성
-            self.credentials = service_account.Credentials.from_service_account_file(
-                self.KEY_FILE, scopes=self.SCOPES)
+            # 환경 변수 로드
+            load_dotenv()
             
-            # 서비스 객체 초기화
+            # 서비스 계정 정보 설정
+            self.credentials_info = {
+                "type": os.getenv("type"),
+                "project_id": os.getenv("project_id"),
+                "private_key_id": os.getenv("private_key_id"),
+                "private_key": os.getenv("private_key").replace('\\n', '\n'),
+                "client_email": os.getenv("client_email"),
+                "client_id": os.getenv("client_id"),
+                "auth_uri": os.getenv("auth_uri"),
+                "token_uri": os.getenv("token_uri"),
+                "auth_provider_x509_cert_url": os.getenv("auth_provider_x509_cert_url"),
+                "client_x509_cert_url": os.getenv("client_x509_cert_url")
+            }
+
+            # 스프레드시트 ID와 스코프 설정
+            self.SPREADSHEET_ID = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID")
+            self.SCOPES = os.getenv("GOOGLE_SHEETS_SCOPES").split()
+
+            # Credentials 객체 생성
+            self.credentials = service_account.Credentials.from_service_account_info(
+                self.credentials_info, scopes=self.SCOPES)
+
+            # 서비스 객체 초기화 (메모리 캐시 사용)
             self.sheet_service = build('sheets', 'v4', 
                                      credentials=self.credentials,
                                      cache=MemoryCache())
@@ -42,7 +60,7 @@ class GoogleAPIManager:
                                      cache=MemoryCache())
             
         except Exception as err:
-            logging.error(f"An error occurred during initialization: {err}")
+            logger.error(f"GoogleAPIManager initialization error: {err}")
             self.sheet_service = None
             self.drive_service = None
             self.forms_service = None
@@ -182,7 +200,6 @@ class GoogleAPIManager:
         except Exception as error:
             logging.error(f"Failed to convert sheet to DataFrame: {error}")
             return pd.DataFrame()
-
     def dataframe_to_sheet(self, spreadsheet_id: str, range_name: str, df: pd.DataFrame) -> bool:
         """
         DataFrame을 스프레드시트에 씁니다.
@@ -280,3 +297,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
