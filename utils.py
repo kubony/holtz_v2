@@ -102,3 +102,42 @@ def setup_logging():
         logger.info(f"OPENAI_API_KEY loaded: {settings.OPENAI_API_KEY.get_secret_value()[:5]}...{settings.OPENAI_API_KEY.get_secret_value()[-5:]}")
     else:
         logger.error("OPENAI_API_KEY is not set in the environment variables.")
+
+def get_current_time_info():
+    from datetime import datetime
+    
+    weekday_names = {
+        0: '월요일', 1: '화요일', 2: '수요일', 
+        3: '목요일', 4: '금요일', 5: '토요일', 6: '일요일'
+    }
+    
+    now = datetime.now()
+    current_time = now.strftime("%H:%M")
+    current_date = now.strftime("%Y년 %m월 %d일")
+    weekday = weekday_names[now.weekday()]
+    
+    return {
+        "time": current_time,
+        "date": current_date,
+        "weekday": weekday
+    }
+
+def load_common_instructions():
+    try:
+        file_path = os.path.join("store_infos", "공통지시사항.md")
+        with open(file_path, 'r', encoding='utf-8') as file:
+            instructions = file.read()
+        return instructions
+    except Exception as e:
+        logger.error(f"공통 지시사항 로드 중 오류 발생: {str(e)}")
+        return "공통 지시사항을 불러오는데 실패했습니다."
+
+def load_project_context(store_name):
+    try:
+        file_path = os.path.join("store_infos", f"{store_name}.md")
+        with open(file_path, 'r', encoding='utf-8') as file:
+            context = file.read()
+        return context
+    except Exception as e:
+        logger.error(f"프로젝트 컨텍스트 로드 중 오류 발생: {str(e)}")
+        return "컨텍스트를 불러오는데 실패했습니다."

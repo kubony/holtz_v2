@@ -15,18 +15,8 @@ class ProjectContextChatbot:
     def __init__(self):
         utils.sync_st_session()
         self.llm = utils.configure_llm()
-        self.context = self.load_project_context()
+        self.context = utils.load_project_context("더치앤빈 서울창업허브점")
     
-    def load_project_context(self):
-        try:
-            file_path = os.path.join("store_infos", "더치앤빈 서울창업허브점.md")
-            with open(file_path, 'r', encoding='utf-8') as file:
-                context = file.read()
-            return context
-        except Exception as e:
-            logger.error(f"프로젝트 컨텍스트 로드 중 오류 발생: {str(e)}")
-            return "컨텍스트를 불러오는데 실패했습니다."
-
     @st.cache_resource
     def setup_chain(_self, max_tokens=1000):
         memory = ConversationBufferMemory(max_token_limit=max_tokens)
@@ -41,6 +31,7 @@ class ProjectContextChatbot:
     def main(self):
         max_tokens = st.sidebar.slider("메모리 크기 (토큰)", 100, 2000, 1000)
         chain = self.setup_chain(max_tokens)
+        common_instructions = utils.load_common_instructions()
 
         with st.expander("프로젝트 컨텍스트 정보", expanded=False):
             st.text(self.context)
@@ -52,8 +43,16 @@ class ProjectContextChatbot:
             with st.chat_message("assistant"):
                 st_cb = StreamHandler(st.empty())
                 try:
-                    # 프로젝트 컨텍스트를 포함한 쿼리 생성
-                    full_query = f"""프로젝트 컨텍스트:
+                    time_info = utils.get_current_time_info()
+                    full_query = f"""공통 지시사항:
+{common_instructions}
+
+현재 시간 정보:
+- 날짜: {time_info['date']}
+- 요일: {time_info['weekday']}
+- 시간: {time_info['time']}
+
+프로젝트 컨텍스트:
 {self.context}
 
 사용자 질문: {user_query}"""
