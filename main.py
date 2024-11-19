@@ -5,8 +5,16 @@ from streaming import StreamHandler
 from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferMemory
 from utils.googlesheetapi import GoogleAPIManager
+from utils.chat_session_manager import ChatSessionManager
+import os
+from dotenv import load_dotenv
 
 logger_setup.setup_logging()
+load_dotenv()
+
+# Supabase 설정
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
 st.set_page_config(
     page_title="Butlerian Holtz",
@@ -37,6 +45,13 @@ class MainChatbot:
         self.llm = llm.configure_llm()
         self.sheet_manager = GoogleAPIManager()
         self.SPREADSHEET_ID = "1eJ266ItXio_9haQ2G5wPULYQS5H7dXHgpOZ3cbVaw7s"
+        self.chat_session_manager = ChatSessionManager(SUPABASE_URL, SUPABASE_KEY)
+        self.store_name = "서울창업허브 3층 그집밥"
+        
+        # 세션 ID가 없으면 새로 생성
+        if 'session_id' not in st.session_state:
+            st.session_state.session_id = self.chat_session_manager.create_session(self.store_name)
+            logger.info(f"새 채팅 세션 생성됨: {st.session_state.session_id}")
     
     def get_waiting_info(self) -> str:
         """구글 시트에서 대기 인원수 정보를 가져옵니다."""
@@ -72,7 +87,6 @@ class MainChatbot:
     def main(self):
         chain = self.setup_chain(1000)
         user_query = st.chat_input(placeholder="안녕하세요! 주문할 식권 수를 입력해주세요!")
-        store_name = "서울창업허브 3층 그집밥"
 
         if user_query:
             chat.display_msg(user_query, 'user')
@@ -80,7 +94,7 @@ class MainChatbot:
                 st_cb = StreamHandler(st.empty())
                 try:
                     common_instructions = chat.load_common_instructions()
-                    project_instructions = chat.load_project_context(store_name)
+                    project_instructions = chat.load_project_context(self.store_name)
                     time_info = chat.get_current_time_info()
                     waiting_info = self.get_waiting_info()
                     
@@ -109,9 +123,22 @@ class MainChatbot:
                         {"callbacks": [st_cb]}
                     )
                     response = result["response"]
+                    
+                    # Supabase에 대화 내용 저장
+                    self.chat_session_manager.save_message(
+                        session_id=st.session_state.session_id,
+                        role="user",
+                        question={"text": user_query, "full_query": full_query},
+                        answer={"text": response}
+                    )
+                    
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     logger.info(f"사용자 질문: {user_query}")
                     logger.info(f"챗봇 응답: {response}")
+                    
+                    # 세션 타임스탬프 업데이트
+                    self.chat_session_manager.update_session_timestamp(st.session_state.session_id)
+                    
                 except Exception as e:
                     error_msg = f"응답 생성 중 오류 발생: {str(e)}"
                     st.error(error_msg)
