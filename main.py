@@ -36,7 +36,7 @@ class MainChatbot:
         session.sync_st_session()
         self.llm = llm.configure_llm()
         self.sheet_manager = GoogleAPIManager()
-        self.SPREADSHEET_ID = "1-D0cPxM-5nU-yrfimHrLgTZZsQTLeVTxRTzQMuen_sw"
+        self.SPREADSHEET_ID = "1eJ266ItXio_9haQ2G5wPULYQS5H7dXHgpOZ3cbVaw7s"
     
     def get_waiting_info(self) -> str:
         """구글 시트에서 대기 인원수 정보를 가져옵니다."""
@@ -44,7 +44,7 @@ class MainChatbot:
             metadata = self.sheet_manager.get_spreadsheet_metadata(self.SPREADSHEET_ID)
             if metadata and metadata.get('sheets'):
                 sheet_title = metadata['sheets'][0]['properties']['title']
-                range_name = f"'{sheet_title}'!A:B"
+                range_name = f"{sheet_title}!A:B"
                 
                 data = self.sheet_manager.read_sheet_data(self.SPREADSHEET_ID, range_name)
                 if data:
