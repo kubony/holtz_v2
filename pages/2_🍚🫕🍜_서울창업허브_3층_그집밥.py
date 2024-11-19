@@ -15,7 +15,7 @@ class ProjectContextChatbot:
     def __init__(self):
         utils.sync_st_session()
         self.llm = utils.configure_llm()
-        self.context = utils.load_project_context("서울창업허브 3층")
+        self.context = utils.load_project_context("서울창업허브 3층 그집밥")
     
     @st.cache_resource
     def setup_chain(_self, max_tokens=1000):
