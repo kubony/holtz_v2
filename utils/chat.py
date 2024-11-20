@@ -9,7 +9,7 @@ def enable_chat_history(func):
         if "messages" not in st.session_state:
             st.session_state["messages"] = [{
                 "role": "assistant", 
-                "content": "안녕하세요! 그집밥 주문 받습니다! 식권 몇 장 드릴까요? 또는 지금 배식 대기줄이 몇 명인지 궁금하세요?"
+                "content": "안녕하세요! 그집밥 주문 받습니다!"
             }]
         
         for msg in st.session_state["messages"]:

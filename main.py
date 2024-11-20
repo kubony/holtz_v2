@@ -39,6 +39,21 @@ with image_container:
             caption="그집밥 오늘 메뉴",
             width=400  # 이미지 너비 지정
         )
+
+# 예시 질문 컨테이너
+example_container = st.container()
+with example_container:
+    st.markdown("##### 💡 질문을 선택하거나 직접 입력해보세요. 받아쓰기 기능도 가능해요!")
+    col1, col2, col3 = st.columns(3)
+    
+    # 각 컬럼에 버튼 추가
+    if col1.button("🍱식권 1장 주문할게요"):
+        st.session_state.example_question = "식권 1장 주문할게요"
+    if col2.button("👥배식줄 얼마나 길어요?"):
+        st.session_state.example_question = "배식줄 얼마나 길어요?"
+    if col3.button("📋오늘급식메뉴는 뭔가요?"):
+        st.session_state.example_question = "오늘급식메뉴는 뭔가요?"
+
 class MainChatbot:
     def __init__(self):
         session.sync_st_session()
@@ -83,22 +98,18 @@ class MainChatbot:
         )
         return chain
     
-    @chat.enable_chat_history
-    def main(self):
-        chain = self.setup_chain(1000)
-        user_query = st.chat_input(placeholder="안녕하세요! 주문할 식권 수를 입력해주세요!")
-
-        if user_query:
-            chat.display_msg(user_query, 'user')
-            with st.chat_message("assistant"):
-                st_cb = StreamHandler(st.empty())
-                try:
-                    common_instructions = chat.load_common_instructions()
-                    project_instructions = chat.load_project_context(self.store_name)
-                    time_info = chat.get_current_time_info()
-                    waiting_info = self.get_waiting_info()
-                    
-                    full_query = f"""
+    def process_user_query(self, user_query):
+        """사용자 질문을 처리하고 응답을 생성하는 메서드"""
+        chat.display_msg(user_query, 'user')
+        with st.chat_message("assistant"):
+            st_cb = StreamHandler(st.empty())
+            try:
+                common_instructions = chat.load_common_instructions()
+                project_instructions = chat.load_project_context(self.store_name)
+                time_info = chat.get_current_time_info()
+                waiting_info = self.get_waiting_info()
+                
+                full_query = f"""
 공통 지시사항:
 {common_instructions}
 
@@ -117,32 +128,46 @@ class MainChatbot:
 {chat.get_chat_history()}
 
 사용자 질문: {user_query}"""
-                    
-                    result = chain.invoke(
-                        {"input": full_query},
-                        {"callbacks": [st_cb]}
-                    )
-                    response = result["response"]
-                    
-                    # Supabase에 대화 내용 저장
-                    self.chat_session_manager.save_message(
-                        session_id=st.session_state.session_id,
-                        role="user",
-                        question={"text": user_query, "full_query": full_query},
-                        answer={"text": response}
-                    )
-                    
-                    st.session_state.messages.append({"role": "assistant", "content": response})
-                    logger.info(f"사용자 질문: {user_query}")
-                    logger.info(f"챗봇 응답: {response}")
-                    
-                    # 세션 타임스탬프 업데이트
-                    self.chat_session_manager.update_session_timestamp(st.session_state.session_id)
-                    
-                except Exception as e:
-                    error_msg = f"응답 생성 중 오류 발생: {str(e)}"
-                    st.error(error_msg)
-                    logger.error(error_msg)
+                
+                chain = self.setup_chain(1000)
+                result = chain.invoke(
+                    {"input": full_query},
+                    {"callbacks": [st_cb]}
+                )
+                response = result["response"]
+                
+                # Supabase에 대화 내용 저장
+                self.chat_session_manager.save_message(
+                    session_id=st.session_state.session_id,
+                    role="user",
+                    question={"text": user_query, "full_query": full_query},
+                    answer={"text": response}
+                )
+                
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                logger.info(f"사용자 질문: {user_query}")
+                logger.info(f"챗봇 응답: {response}")
+                
+                # 세션 타임스탬프 업데이트
+                self.chat_session_manager.update_session_timestamp(st.session_state.session_id)
+                
+            except Exception as e:
+                error_msg = f"응답 생성 중 오류 발생: {str(e)}"
+                st.error(error_msg)
+                logger.error(error_msg)
+
+    @chat.enable_chat_history
+    def main(self):
+        # 예시 질문이 선택되었다면 해당 내용을 처리
+        if hasattr(st.session_state, 'example_question'):
+            user_query = st.session_state.example_question
+            self.process_user_query(user_query)
+            del st.session_state.example_question
+        
+        # 채팅 입력창 처리
+        user_query = st.chat_input(placeholder="주문할 식권 수 또는 궁금한 점을 입력해주세요!")
+        if user_query and not hasattr(st.session_state, 'example_question'):
+            self.process_user_query(user_query)
 
 if __name__ == "__main__":
     obj = MainChatbot()
